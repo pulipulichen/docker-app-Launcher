@@ -188,6 +188,7 @@ fi
 # 檢查有沒有輸入檔案參數
 
 var="$3"
+echo $var
 useParams="true"
 WORK_DIR=`pwd`
 if [ "$INPUT_FILE" != "false" ]; then
