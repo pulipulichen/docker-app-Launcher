@@ -2,6 +2,9 @@
 #include <FileConstants.au3>
 #include <InetConstants.au3>
 #include <WinAPIFiles.au3>
+#include <Date.au3>
+#include <Array.au3>
+#include <File.au3>
 
 If $CmdLine[0] = 0 Then
 	Exit
@@ -16,7 +19,7 @@ Local $lock_file_path = @HomeDrive & @HomePath & "\docker-app\" & $sPROJECT_NAME
 
 If FileExists($lock_file_path) Then
     ; Get the creation time of the file in seconds since epoch
-    Local $file_creation_time = _FileGetTime($lock_file_path, $FT_MODIFIED, 1)
+    Local $file_creation_time = FileGetTime($lock_file_path, $FT_MODIFIED, 1)
     Local $current_time = _NowCalc() ; Get the current time in seconds since epoch
     Local $timeout_seconds = 60
 
@@ -29,19 +32,25 @@ EndIf
 ; Add queue
 
 If FileExists($lock_file_path) Then
-    Local $lines = _FileReadToArray($lock_file_path)
-    Local $found = False
+    Local $lines
+	If _FileReadToArray($lock_file_path, $lines) Then
+		Local $found = False
 
-    For $i = 1 To $lines[0]
-        If StringStripWS($lines[$i], 8) = StringStripWS($parameters, 8) Then
-            ConsoleWrite("Parameters already exist in the lock file. Exiting..." & @CRLF)
-            Exit
-        EndIf
-    Next
+		For $i = 1 To $lines[0]
+			If StringStripWS($lines[$i], 8) = StringStripWS($parameters, 8) Then
+				ConsoleWrite("Parameters already exist in the lock file. Exiting..." & @CRLF)
+				Exit
+			EndIf
+		Next
 
-    _FileWriteToLine($lock_file_path, $lines[0] + 1, $parameters, 1)
-    ConsoleWrite("Added queue " & $parameters & @CRLF)
-    Exit
+		_FileWriteToLine($lock_file_path, $lines[0] + 1, $parameters, 1)
+		ConsoleWrite("Added queue " & $parameters & @CRLF)
+		Exit
+	Else
+		If FileExists($lock_file_path) Then
+			FileDelete($lock_file_path)
+		EndIf
+	EndIf
 Else
     ConsoleWrite("Lock file does not exist." & @CRLF)
 EndIf
@@ -54,6 +63,16 @@ Global $fileHandle = FileOpen($lock_file_path, $FO_OVERWRITE)
 ; Close the file handle
 FileClose($fileHandle)
 
+; Function to get the directory path from a file path
+Func GetDirPath($sFilePath)
+    Local $iLastBackslash = StringInStr($sFilePath, "\", 0, -1) ; Find the last occurrence of '\'
+    If $iLastBackslash > 0 Then
+        Return StringLeft($sFilePath, $iLastBackslash - 1)
+    EndIf
+    ; If no backslash is found, assume the file path is just a filename
+    Return @ScriptDir
+EndFunc
+
 ;~ ---------------------
 
 ;~ MsgBox($MB_SYSTEMMODAL, "Title", "This message box will timeout after 10 seconds or select the OK button.", 10)
@@ -65,6 +84,7 @@ If Not FileExists($sProjectFolder) then
 EndIf
 
 Local $sWorkingDir = @WorkingDir
+Local $sScriptDir = GetDirPath($CmdLine[2])
 
 ;~ ---------------------
 
@@ -72,6 +92,9 @@ Local $result = 0
 
 $result = ShellExecuteWait('WHERE', 'git', "", "open", @SW_HIDE)
 If $result = 1 then
+	If FileExists($lock_file_path) Then
+	    FileDelete($lock_file_path)
+	EndIf
 	MsgBox($MB_SYSTEMMODAL, "Environment Setting", "Please install GIT.")
 	ShellExecute("https://git-scm.com/downloads", "", "open", @SW_HIDE)
 	Exit
@@ -79,6 +102,9 @@ EndIf
 
 $result = ShellExecuteWait('WHERE', 'docker-compose', "", "open", @SW_HIDE)
 If $result = 1 then
+	If FileExists($lock_file_path) Then
+	    FileDelete($lock_file_path)
+	EndIf
 	MsgBox($MB_SYSTEMMODAL, "Environment Setting", "Please install Docker Desktop.")
 	ShellExecute("https://docs.docker.com/compose/install/", "", "open", @SW_HIDE)
 	Exit
@@ -86,6 +112,9 @@ EndIf
 
 $result = ShellExecuteWait('docker', 'version', "", "open", @SW_HIDE)
 If $result = 1 then
+	If FileExists($lock_file_path) Then
+	    FileDelete($lock_file_path)
+	EndIf
 	MsgBox($MB_SYSTEMMODAL, "Environment Setting", "Please start Docker Desktop.")
 	Exit
 EndIf
@@ -181,7 +210,7 @@ If $INPUT_FILE = 1 Then
 	If $CmdLine[0] = 0 Then
 		$sUseParams = false
 		Local $sMessage = "Select File"
-		Local $sFileOpenDialog = FileOpenDialog($sMessage, @ScriptDir & "\", $sFILE_EXT , $FD_FILEMUSTEXIST + $FD_MULTISELECT)
+		Local $sFileOpenDialog = FileOpenDialog($sMessage, $sScriptDir & "\", $sFILE_EXT , $FD_FILEMUSTEXIST + $FD_MULTISELECT)
 		$sFiles = StringSplit($sFileOpenDialog, "|")
 	EndIf
 EndIf
@@ -191,7 +220,7 @@ EndIf
 
 Func getCloudflarePublicURL()
 	;ConsoleWrite("getCloudflarePublicURL"  & @CRLF)
-    Local $dirname = @ScriptDir
+    Local $dirname = $sScriptDir
     
     Local $cloudflareFailed = $dirname & "" & $sPROJECT_NAME & "\.cloudflare.failed"
     If FileExists($cloudflareFailed) Then
@@ -200,7 +229,7 @@ Func getCloudflarePublicURL()
 
     Local $cloudflareFile = $dirname & "" & $sPROJECT_NAME & "\.cloudflare.url"
 	;ConsoleWrite($cloudflareFile  & @CRLF)
-		Local $timeout = 60 ; 60 seconds timeout
+		Local $timeout = 120 ; 60 seconds timeout
 		Local $interval = 5 ; 5 seconds interval
 		Local $elapsedTime = 0
 
@@ -224,7 +253,7 @@ EndFunc
 
 Func waitForDockerAppReady()
 	;ConsoleWrite("getCloudflarePublicURL"  & @CRLF)
-    Local $dirname = @ScriptDir
+    Local $dirname = $sScriptDir
     
     Local $readyFile = $dirname & "" & $sPROJECT_NAME & "\.docker-web.ready"
     While Not FileExists($readyFile)
@@ -233,7 +262,7 @@ Func waitForDockerAppReady()
 EndFunc
 
 Func setCloudflareFailed()
-	Local $dirname = @ScriptDir
+	Local $dirname = $sScriptDir
 	; Specify the file path
 	Local $filePath = $dirname & "" & $sPROJECT_NAME & "\.cloudflare.failed"
 
@@ -319,7 +348,7 @@ EndFunc
 ;~ ----------------------------------------------------------------
 
 Func runDockerCompose()
-	Local $dirname = StringLeft(@ScriptDir, StringInStr(@ScriptDir, "\", 0, -1) - 1)
+	Local $dirname = StringLeft($sScriptDir, StringInStr($sScriptDir, "\", 0, -1) - 1)
 	Local $cloudflareFile = $dirname & "\" & $sPROJECT_NAME & "\.cloudflare.url"
 	If FileExists($cloudflareFile) Then
 		FileDelete($cloudflareFile)
@@ -424,8 +453,14 @@ While FileGetSize($lock_file_path) > 0
     Local $parameters = FileReadLine($lock_file_path)
 
     ; Remove the first line from the lock file
-    Local $lines = _FileReadToArray($lock_file_path)
-    _FileWriteFromArray($lock_file_path, $lines, 2)
+    Local $lines
+	If _FileReadToArray($lock_file_path, $lines) Then
+		_FileWriteFromArray($lock_file_path, $lines, 2)
+	Else
+		If FileExists($lock_file_path) Then
+			FileDelete($lock_file_path)
+		EndIf
+	EndIf
 
     ; =================================================================
     If $parameters <> "" Then

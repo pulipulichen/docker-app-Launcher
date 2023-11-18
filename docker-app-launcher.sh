@@ -89,6 +89,10 @@ then
 
   openURL https://git-scm.com/downloads &
 
+  if [ -e "${lock_file_path}" ]; then 
+    rm "${lock_file_path}"
+  fi
+
   exit 1
 fi
 
@@ -97,6 +101,10 @@ then
   echo "docker-compose could not be found"
 
   openURL https://docs.docker.com/compose/install/ &
+
+  if [ -e "${lock_file_path}" ]; then 
+    rm "${lock_file_path}"
+  fi
 
   exit 1
 fi
@@ -231,8 +239,8 @@ getCloudflarePublicURL() {
     elapsed_time=$((elapsed_time + interval))
   done
 
-  echo "false"
-  exit 1
+  #echo "false"
+  #exit 1
 }
 
 # ----------------------------------------------------------------
@@ -354,10 +362,10 @@ runDockerCompose() {
 cleanup() {
   echo "Stopping the Docker container..."
   docker-compose down
-  if [ -e "${lock_file_path}" ]; then 
+  if [ -f "${lock_file_path}" ]; then 
     rm "${lock_file_path}"
   fi
-  exit 1
+  #exit 1
 }
 
 # -----------------
