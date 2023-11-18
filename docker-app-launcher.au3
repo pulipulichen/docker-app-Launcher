@@ -207,7 +207,7 @@ Global $sFILE_EXT = "* (*.*)"
 Local $sUseParams = true
 Local $sFiles[]
 If $INPUT_FILE = 1 Then
-	If $CmdLine[0] = 0 Then
+	If $CmdLine[0] = 2 Then
 		$sUseParams = false
 		Local $sMessage = "Select File"
 		Local $sFileOpenDialog = FileOpenDialog($sMessage, $sScriptDir & "\", $sFILE_EXT , $FD_FILEMUSTEXIST + $FD_MULTISELECT)
