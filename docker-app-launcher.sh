@@ -89,7 +89,7 @@ then
 
   openURL https://git-scm.com/downloads &
 
-  if [ -e "${lock_file_path}" ]; then 
+  if [ -e "${lock_file_path}" ]; then
     rm "${lock_file_path}"
   fi
 
@@ -102,7 +102,7 @@ then
 
   openURL https://docs.docker.com/compose/install/ &
 
-  if [ -e "${lock_file_path}" ]; then 
+  if [ -e "${lock_file_path}" ]; then
     rm "${lock_file_path}"
   fi
 
@@ -188,6 +188,7 @@ fi
 # 檢查有沒有輸入檔案參數
 
 var="$3"
+var=$(getRealpath "${var}")
 echo $var
 useParams="true"
 WORK_DIR=`pwd`
@@ -292,7 +293,7 @@ runDockerCompose() {
   fi
 
   #echo "m ${must_sudo}"
-  
+
   if [ "$PUBLIC_PORT" == "false" ]; then
     if [ "$must_sudo" == "false" ]; then
       docker-compose down
@@ -363,7 +364,7 @@ runDockerCompose() {
 cleanup() {
   echo "Stopping the Docker container..."
   docker-compose down
-  if [ -f "${lock_file_path}" ]; then 
+  if [ -f "${lock_file_path}" ]; then
     rm "${lock_file_path}"
   fi
   #exit 1
@@ -375,7 +376,7 @@ cleanup() {
 if [ "$INPUT_FILE" != "false" ]; then
   if [ "${useParams}" == "true" ]; then
     # echo "use parameters"
-    PARAMETERS=("${@:2}")
+    PARAMETERS=("${@:3}")
     for var in "${PARAMETERS[@]}"; do
       cd "${WORK_DIR}"
 
@@ -437,7 +438,7 @@ done
 # 移除鎖
 
 echo "Lock file is empty or does not exist. Removing and exiting..."
-if [ -e "${lock_file_path}" ]; then 
+if [ -e "${lock_file_path}" ]; then
   rm "${lock_file_path}"
 fi
 exit 0
