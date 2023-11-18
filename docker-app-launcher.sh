@@ -354,7 +354,9 @@ runDockerCompose() {
 cleanup() {
   echo "Stopping the Docker container..."
   docker-compose down
-  ![ -e "${lock_file_path}" ] && rm "${lock_file_path}"
+  if [ -e "${lock_file_path}" ]; then 
+    rm "${lock_file_path}"
+  fi
   exit 1
 }
 
