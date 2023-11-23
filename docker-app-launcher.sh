@@ -338,7 +338,7 @@ runDockerCompose() {
 
     # openURL "http://127.0.0.1:$PUBLIC_PORT"
     # echo "${cloudflare_url}"
-    if [ "$cloudflare_url" == "false" ] && [ project_inited == true ]; then
+    if { [ -z "$cloudflare_url" ] || [ "$cloudflare_url" == "false" ]; } && [ project_inited == true ]; then
       openURL "http://127.0.0.1:$PUBLIC_PORT"
     else
       openURL "${cloudflare_url}"
