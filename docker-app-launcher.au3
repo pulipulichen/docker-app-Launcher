@@ -271,7 +271,8 @@ Func waitForDockerAppReady()
     Local $dirname = $sScriptDir
     
     Local $readyFile = $dirname & "" & $sPROJECT_NAME & "\.docker-web.ready"
-    While Not FileExists($readyFile)
+		Local $readyFileAPP = $sProjectFolder & "\app\.docker-web.ready"
+    While Not FileExists($readyFile) and Not FileExists($readyFileAPP)
 	    Sleep(3000)
     WEnd
 EndFunc
