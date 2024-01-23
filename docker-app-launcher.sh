@@ -262,6 +262,7 @@ setDockerComposeYML() {
   # template=$(echo "$template" | sed "s/__INPUT__/$filename/g")
 
   template=$(echo "$template" | sed "s|__SOURCE__|$dirname|g")
+  template=$(echo "$template" | sed "s|__SOURCE_APP__|/tmp/docker-app/${PROJECT_NAME}/app|g")
   filename=$(echo "$filename" | sed 's/&/\\&/g')
   echo $filename
   template=$(echo "$template" | sed "s|__INPUT__|$filename|g")
