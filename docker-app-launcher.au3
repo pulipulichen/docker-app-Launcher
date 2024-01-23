@@ -324,6 +324,11 @@ Func setDockerComposeYML($file)
 		If StringRight($dirname, 1) = ':' Then
 			$dirname = $dirname & "/"
 		EndIf
+
+		$dirnameForProjectFolder = StringReplace($sProjectFolder, '\', "/")
+		If StringRight($dirnameForProjectFolder, 1) = ':' Then
+			$dirnameForProjectFolder = $dirnameForProjectFolder & "/"
+		EndIf
 			
 		;MsgBox($MB_SYSTEMMODAL, "Title", $dirname, 10)
 
@@ -332,7 +337,7 @@ Func setDockerComposeYML($file)
 		;ConsoleWrite($template)
 		
 		$template = StringReplace($template, "__SOURCE__", $dirname)
-		$template = StringReplace($template, "__SOURCE_APP__", $sProjectFolder & "/app")
+		$template = StringReplace($template, "__SOURCE_APP__", $dirnameForProjectFolder & "/app")
 		$template = StringReplace($template, "__INPUT__", $filename)
 	EndIf
 	FileDelete($sProjectFolder & "\docker-compose.yml")
