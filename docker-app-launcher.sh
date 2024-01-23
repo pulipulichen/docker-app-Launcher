@@ -216,6 +216,7 @@ fi
 
 dirname=$(dirname "$SCRIPT_PATH")
 cloudflare_file="${dirname}/${PROJECT_NAME}/.cloudflare.url"
+cloudflare_file_app="/tmp/docker-app/${PROJECT_NAME}/app/.cloudflare.url"
 
 getCloudflarePublicURL() {
 
@@ -234,6 +235,11 @@ getCloudflarePublicURL() {
   while [ $elapsed_time -lt $timeout ]; do
     if [ -s "$cloudflare_file" ] && [ -f "$cloudflare_file" ]; then
         echo $(<"$cloudflare_file")
+        exit 0
+    fi
+
+    if [ -s "$cloudflare_file_app" ] && [ -f "$cloudflare_file_app" ]; then
+        echo $(<"$cloudflare_file_app")
         exit 0
     fi
 

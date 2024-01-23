@@ -227,24 +227,39 @@ Func getCloudflarePublicURL()
 	    Return false
     EndIf
 
+		Local $cloudflareFailedAPP = $sProjectFolder & "\app\.cloudflare.failed"
+    If FileExists($cloudflareFailedAPP) Then
+	    Return false
+    EndIf
+
     Local $cloudflareFile = $dirname & "" & $sPROJECT_NAME & "\.cloudflare.url"
+		Local $cloudflareFileAPP = $sProjectFolder & "\app\.cloudflare.url"
 	;ConsoleWrite($cloudflareFile  & @CRLF)
 		Local $timeout = 120 ; 60 seconds timeout
 		Local $interval = 5 ; 5 seconds interval
 		Local $elapsedTime = 0
 
 		While $elapsedTime < $timeout
-		    If FileExists($cloudflareFile) Then
-			ConsoleWrite("Existed"  & @CRLF)
-			Local $fileContent = FileRead($cloudflareFile)
-			ConsoleWrite($fileContent  & @CRLF)
-			If StringStripWS($fileContent, 1 + 2) <> "" Then
-			   Return $fileContent
-			EndIf
-		    EndIf
+	    If FileExists($cloudflareFile) Then
+				ConsoleWrite("Existed"  & @CRLF)
+				Local $fileContent = FileRead($cloudflareFile)
+				ConsoleWrite($fileContent  & @CRLF)
+				If StringStripWS($fileContent, 1 + 2) <> "" Then
+				   Return $fileContent
+				EndIf
+	    EndIf
 
-		    Sleep($interval * 1000) ; Sleep for $interval seconds
-		    $elapsedTime += $interval
+			If FileExists($cloudflareFileAPP) Then
+				ConsoleWrite("Existed"  & @CRLF)
+				Local $fileContent = FileRead($cloudflareFileAPP)
+				ConsoleWrite($fileContent  & @CRLF)
+				If StringStripWS($fileContent, 1 + 2) <> "" Then
+				   Return $fileContent
+				EndIf
+	    EndIf
+
+	    Sleep($interval * 1000) ; Sleep for $interval seconds
+	    $elapsedTime += $interval
 		WEnd
 
 		setCloudflareFailed()
@@ -317,6 +332,7 @@ Func setDockerComposeYML($file)
 		;ConsoleWrite($template)
 		
 		$template = StringReplace($template, "__SOURCE__", $dirname)
+		$template = StringReplace($template, "__SOURCE_APP__", $sProjectFolder & "/app")
 		$template = StringReplace($template, "__INPUT__", $filename)
 	EndIf
 	FileDelete($sProjectFolder & "\docker-compose.yml")
@@ -352,6 +368,11 @@ Func runDockerCompose()
 	Local $cloudflareFile = $dirname & "\" & $sPROJECT_NAME & "\.cloudflare.url"
 	If FileExists($cloudflareFile) Then
 		FileDelete($cloudflareFile)
+	EndIf
+
+	Local $cloudflareFileAPP = $sProjectFolder & "\app\.cloudflare.url"
+	If FileExists($cloudflareFileAPP) Then
+		FileDelete($cloudflareFileAPP)
 	EndIf
 	
 	RunWait(@ComSpec & " /c docker-compose down")
