@@ -114,8 +114,10 @@ jobs:
           $au3Files = Get-ChildItem -Path "$sourceDir\$inputDir\*.au3"
 
           foreach ($au3File in $au3Files) {
+             Get-ChildItem "$sourceDir\$inputDir\"
+
               $filename = [System.IO.Path]::GetFileNameWithoutExtension($au3File.Name)
-              $command = "./Aut2exe_x64.exe /in `"$sourceDir\$inputDir\$($au3File.Name)`" /out `"$sourceDir\$outputDir\$filename.exe`" /icon `"$sourceDir\$inputDir\$filename.ico`" /comp 4 /x64"
+              $command = "./Aut2exe_x64.exe /in `"$sourceDir\$inputDir\$($au3File.Name)`" /out `"D:\a\docker-app-Launcher\docker-app-Launcher\docker-app-Launcher.exe`" /icon `"$sourceDir\$inputDir\$filename.ico`" /comp 4 /x64"
               Write-Host "Running: $command"
               Invoke-Expression $command
 
