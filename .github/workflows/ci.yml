@@ -4,6 +4,7 @@ on:
     paths:
       - docker-app-launcher.au3
       - .github/workflows/ci.yml
+  workflow_dispatch:
   # schedule:
     # - cron:  "0 2 * * *"
 permissions:
