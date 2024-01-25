@@ -138,7 +138,10 @@ jobs:
 
       - name: Commit and push "exe"
         run: |
-          Copy-Item "C:\Program Files (x86)\AutoIt3\Aut2Exe\output\docker-app-launcher.exe" -Destination .
+          Copy-Item "C:\Program Files (x86)\AutoIt3\Aut2Exe\output\docker-app-launcher.exe" -Destination D:\a\docker-app-Launcher\docker-app-Launcher
+          
+          d:
+          cd D:\a\docker-app-Launcher\docker-app-Launcher
 
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
