@@ -64,7 +64,7 @@ jobs:
                 #".\tool\ImageMagick-7.1.1-21-portable-Q16-x64\magick.exe" convert "$sourceFilePath" -resize 64x64 "$icoFilePath"
                 #".\tool\ImageMagick-7.1.1-21-portable-Q16-x64\magick.exe" $inputImagePath -resize 64x64 "$icoFilePath"
 
-                $command = ".\tool\ImageMagick-7.1.1-21-portable-Q16-x64\magick.exe \"$inputImagePath\" -resize 64x64 \"$icoFilePath\""
+                $command = ".\tool\ImageMagick-7.1.1-21-portable-Q16-x64\magick.exe '$inputImagePath' -resize 64x64 '$icoFilePath'"
                 Write-Host "Running: $command"
                 Invoke-Expression $command
 
