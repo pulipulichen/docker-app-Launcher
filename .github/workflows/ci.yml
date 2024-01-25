@@ -119,7 +119,7 @@ jobs:
               Write-Host "Running: $command"
               Invoke-Expression $command
 
-              Get-ChildItem "$sourceDir\$output\"
+              Get-ChildItem "$sourceDir\$outputDir\"
           }
 
           Get-ChildItem "C:\Program Files (x86)\AutoIt3\Aut2Exe\output"
