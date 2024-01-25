@@ -132,10 +132,12 @@ jobs:
       #     path: C:\Program Files (x86)\AutoIt3\Aut2Exe\output
       #     if-no-files-found: error
 
-      - name: Commit and push "output.csv"
+      - name: Commit and push "exe"
         run: |
+          Copy-Item C:\"Program Files (x86)"\AutoIt3\Aut2Exe\output\docker-app-launcher.exe -Destination .
+
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add output.csv
-          git commit -m "Add output.csv"
+          git add docker-app-launcher.exe
+          git commit -m "Add docker-app-launcher.exe"
           git push
