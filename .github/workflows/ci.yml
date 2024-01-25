@@ -118,6 +118,8 @@ jobs:
               $command = "./Aut2exe_x64.exe /in `"$sourceDir\$inputDir\$($au3File.Name)`" /out `"$sourceDir\$outputDir\$filename.exe`" /icon `"$sourceDir\$inputDir\$filename.ico`" /comp 4 /x64"
               Write-Host "Running: $command"
               Invoke-Expression $command
+
+              Get-ChildItem "$sourceDir\$output\"
           }
 
           Get-ChildItem "C:\Program Files (x86)\AutoIt3\Aut2Exe\output"
@@ -138,7 +140,7 @@ jobs:
 
       - name: Commit and push "exe"
         run: |
-          Copy-Item "C:\Program Files (x86)\AutoIt3\Aut2Exe\output\docker-app-launcher.exe" -Destination D:\a\docker-app-Launcher\docker-app-Launcher
+          Copy-Item -Path C:\"Program Files (x86)"\AutoIt3\Aut2Exe\output\docker-app-launcher.exe -Destination D:\a\docker-app-Launcher\docker-app-Launcher -Force
           
           d:
           cd D:\a\docker-app-Launcher\docker-app-Launcher
