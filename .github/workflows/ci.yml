@@ -41,6 +41,7 @@ jobs:
           Copy-Item "*.au3" -Destination C:\"Program Files (x86)"\AutoIt3\Aut2Exe\input
           Copy-Item "*.png" -Destination C:\"Program Files (x86)"\AutoIt3\Aut2Exe\input
           Get-ChildItem "C:\Program Files (x86)\AutoIt3\Aut2Exe\input"
+          (Get-Location).Path
 
       # ----------------------------------------------------------------
 
