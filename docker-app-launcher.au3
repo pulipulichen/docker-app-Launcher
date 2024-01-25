@@ -338,6 +338,7 @@ Func setDockerComposeYML($file)
 		;ConsoleWrite($template)
 		
 		$template = StringReplace($template, "__SOURCE__", $dirname)
+		$template = StringReplace($template, "__SOURCE_INPUT__", $dirnameForProjectFolder & "/app")
 		$template = StringReplace($template, "__SOURCE_APP__", $dirnameForProjectFolder & "/app")
 		$template = StringReplace($template, "__INPUT__", $filename)
 	EndIf

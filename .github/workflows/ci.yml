@@ -1,0 +1,138 @@
+name: CI
+on: 
+  push:
+    paths:
+      - docker-app-launcher.au3
+  # schedule:
+    # - cron:  "0 2 * * *"
+permissions:
+  contents: write
+jobs:
+  build-and-deploy:
+    concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession. 
+    runs-on: 	windows-2019
+    steps:
+      # ----------------------------------------------------------------
+
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      # ----------------------------------------------------------------
+
+      - name: Cache
+        id: cache
+        uses: actions/cache@v3
+        env:
+          cache-name: cache
+        with:
+          path: C:\"Program Files (x86)"\AutoIt3\Aut2Exe\
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('C:\"Program Files (x86)"\AutoIt3\Aut2Exe\Aut2exe.exe') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Prepare files
+        run: |
+          mkdir C:\"Program Files (x86)"\AutoIt3\Aut2Exe\input
+          mkdir C:\"Program Files (x86)"\AutoIt3\Aut2Exe\output
+          Copy-Item "input\*" -Destination C:\"Program Files (x86)"\AutoIt3\Aut2Exe\input
+
+      # ----------------------------------------------------------------
+
+      - name: Convert Image to ICO
+        run: |
+            
+            $sourceDir = "C:\Program Files (x86)\AutoIt3\Aut2Exe"
+            $outputDir = "output"
+            $inputDir = "input"
+  
+            function Convert-ImgToIco {
+                param (
+                    [string]$inputImagePath
+                )
+
+                $inputFilenameNoExt = [System.IO.Path]::GetFileNameWithoutExtension($inputImagePath)
+                #$sourceFilePath = $inputImagePath
+
+                $icoFilePath = "$sourceDir\$inputFilenameNoExt.ico"
+                #".\tool\ImageMagick-7.1.1-21-portable-Q16-x64\magick.exe" convert "$sourceFilePath" -resize 64x64 "$icoFilePath"
+                #".\tool\ImageMagick-7.1.1-21-portable-Q16-x64\magick.exe" $inputImagePath -resize 64x64 "$icoFilePath"
+
+                $command = ".\tool\ImageMagick-7.1.1-21-portable-Q16-x64\magick.exe $inputImagePath -resize 64x64 $icoFilePath"
+                Write-Host "Running: $command"
+                Invoke-Expression $command
+
+            }
+
+            # --------
+  
+            # Declare an array
+            $imageTypes = @("png", "gif", "jpg", "jpeg", "webp")
+
+            # Loop through each element and echo (write) it
+            foreach ($type in $imageTypes) {
+              $files = Get-ChildItem -Path "$sourceDir\*.$type"
+              foreach ($file in $files) {
+                Write-Host $file
+                Convert-ImgToIco -inputImagePath "$file"
+              }
+            }
+
+            # ---------
+
+            c:
+            cd "C:\Program Files (x86)\AutoIt3\Aut2Exe"
+            dir
+      
+      # ----------------------------------------------------------------
+
+      
+      - name: Install Autoit
+        run: |
+          if (!(Test-Path "C:\Program Files (x86)\AutoIt3\Aut2Exe\Aut2exe.exe")) { 
+            cd compiler
+            ./autoit-v3-setup.exe /S 
+            Start-Sleep -s 3
+          }
+
+
+      - name: Compile
+        run: |
+          c:
+          cd "C:\Program Files (x86)\AutoIt3\Aut2Exe"
+          
+          $sourceDir = "C:\Program Files (x86)\AutoIt3\Aut2Exe"
+          $outputDir = "output"
+          $inputDir = "input"
+
+          $au3Files = Get-ChildItem -Path "$sourceDir\*.au3"
+
+          foreach ($au3File in $au3Files) {
+              $filename = [System.IO.Path]::GetFileNameWithoutExtension($au3File.Name)
+              $command = "./Aut2exe_x64.exe /in `"$sourceDir\$($au3File.Name)`" /out `"$sourceDir\$filename.exe`" /icon `"$sourceDir\$filename.ico`" /comp 4 /x64"
+              Write-Host "Running: $command"
+              Invoke-Expression $command
+          }
+
+      - name: Get current time
+        uses: josStorer/get-current-time@v2.0.2
+        id: current-time
+        with:
+          format: YYYYMMDD-HHmmSS
+          utcOffset: "+08:00"
+
+      # - name: Upload
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: AutoITBuilder_${{ steps.current-time.outputs.formattedTime }}
+      #     path: C:\Program Files (x86)\AutoIt3\Aut2Exe\output
+      #     if-no-files-found: error
+
+      - name: Commit and push "output.csv"
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add docker-app-launcher.exe
+          git commit -m "Add docker-app-launcher.exe"
+          git push
