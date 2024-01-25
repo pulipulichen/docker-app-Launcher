@@ -119,6 +119,8 @@ jobs:
               Invoke-Expression $command
           }
 
+          Get-ChildItem "C:\Program Files (x86)\AutoIt3\Aut2Exe\output"
+
       # - name: Get current time
       #   uses: josStorer/get-current-time@v2.0.2
       #   id: current-time
@@ -135,7 +137,7 @@ jobs:
 
       - name: Commit and push "exe"
         run: |
-          Copy-Item C:\"Program Files (x86)"\AutoIt3\Aut2Exe\output\docker-app-launcher.exe -Destination .
+          Copy-Item "C:\Program Files (x86)\AutoIt3\Aut2Exe\output\docker-app-launcher.exe" -Destination .
 
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
