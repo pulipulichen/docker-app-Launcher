@@ -144,7 +144,7 @@ jobs:
 
       - name: Commit and push "exe"
         run: |
-          Copy-Item -Path C:\"Program Files (x86)"\AutoIt3\Aut2Exe\output\docker-app-launcher.exe -Destination D:\a\docker-app-Launcher\docker-app-Launcher -Force
+          # Copy-Item -Path C:\"Program Files (x86)"\AutoIt3\Aut2Exe\output\docker-app-launcher.exe -Destination D:\a\docker-app-Launcher\docker-app-Launcher -Force
           
           d:
           cd D:\a\docker-app-Launcher\docker-app-Launcher
