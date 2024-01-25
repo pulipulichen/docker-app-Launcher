@@ -45,7 +45,7 @@ jobs:
 
       # ----------------------------------------------------------------
 
-        - name: Convert Image to ICO
+      - name: Convert Image to ICO
         run: |
             
             $sourceDir = "C:\Program Files (x86)\AutoIt3\Aut2Exe"
