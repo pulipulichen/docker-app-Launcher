@@ -261,12 +261,15 @@ setDockerComposeYML() {
   dirname=$(dirname "$file")
 
 
-  template=$(<"/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml")
+  template=$("/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml")
   #echo "$template"
 
   # template=$(echo "$template" | sed "s/__SOURCE__/$dirname/g")
   # template=$(echo "$template" | sed "s/__INPUT__/$filename/g")
 
+  let extPort = getExtPort()
+
+  template=$(echo "$template" | sed "s|__EXT_PORT__|$extPort|g")
   template=$(echo "$template" | sed "s|__SOURCE__|$dirname|g")
   template=$(echo "$template" | sed "s|__SOURCE_INPUT__|$dirname|g")
   template=$(echo "$template" | sed "s|__SOURCE_APP__|/tmp/docker-app/${PROJECT_NAME}/app|g")
@@ -275,6 +278,33 @@ setDockerComposeYML() {
   template=$(echo "$template" | sed "s|__INPUT__|$filename|g")
 
   echo "$template" > "/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
+}
+
+getExtPort() {
+  local ext_port
+
+  # Check if the file exists
+  if [ -f "/tmp/docker-app/docker-web-ext-port.txt" ]; then
+    # Read ext_port from the file
+    ext_port=$(<"/tmp/docker-app/docker-web-ext-port.txt")
+
+    # Check if ext_port is occupied, and if it is, increment it until it's available
+    while nc -z localhost "$ext_port"; do
+      ext_port=$((ext_port + 1))
+      if [ "$ext_port" -gt 59999 ]; then
+        ext_port=50000
+      fi
+    done
+  else
+    # If the file does not exist, set ext_port to 50000
+    ext_port=50000
+  fi
+
+  # Save ext_port to the file
+  echo "$ext_port" > "/tmp/docker-app/docker-web-ext-port.txt"
+
+  # Return ext_port
+  echo "$ext_port"
 }
 
 # ========
