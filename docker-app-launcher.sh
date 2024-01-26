@@ -267,7 +267,7 @@ setDockerComposeYML() {
   # template=$(echo "$template" | sed "s/__SOURCE__/$dirname/g")
   # template=$(echo "$template" | sed "s/__INPUT__/$filename/g")
 
-  extPort = $(getExtPort)
+  extPort=$(getExtPort)
 
   template=$(echo "$template" | sed "s|__EXT_PORT__|$extPort|g")
   template=$(echo "$template" | sed "s|__SOURCE__|$dirname|g")
