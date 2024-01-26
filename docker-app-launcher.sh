@@ -86,7 +86,8 @@ getExtPort() {
     # Read ext_port from the file
     ext_port=$(<"/tmp/docker-app/docker-web-ext-port.txt")
     # Check if ext_port is occupied, and if it is, increment it until it's available
-    while nc -z localhost "$ext_port"; do
+    nc -z localhost "$ext_port";
+    while docker ps | grep -q ":$ext_port->"; do
       ext_port=$((ext_port + 1))
       if [ "$ext_port" -gt 59999 ]; then
         ext_port=50000
@@ -324,6 +325,13 @@ setDockerComposeYML() {
 #     echo "result: ${result}"
     # template=$(echo "$template" | sed "s|__EXT_PORT__|\"${result}\"|g") || echo "result: ${result}"
     template="${template//__EXT_PORT__/${result}}" || echo "result: ${result}"
+  fi
+  if [[ "$template" == *__NETWORK__* ]]; then
+    result="${PUBLIC_PORT}"
+
+#     echo "result: ${result}"
+    # template=$(echo "$template" | sed "s|__EXT_PORT__|\"${result}\"|g") || echo "result: ${result}"
+    template="${template//__NETWORK__/docker_web_network_${result}}" || echo "docker_web_network_result: docker_web_network_${result}"
   fi
   if [[ "$template" == *__SOURCE__* ]]; then
     #echo "dirname: ${dirname}"
