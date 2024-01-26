@@ -63,7 +63,10 @@ openURL() {
 
 getRealpath() {
   path="$1"
-  if command -v realpath &> /dev/null; then
+
+  if [[ $path == /* || -z $path ]]; then
+    echo "$path"
+  elif command -v realpath &> /dev/null; then
     path=`realpath "${path}"`
   else
     path=$(cd "$(dirname "${path}")"; pwd)/"$(basename "${path}")"
@@ -259,52 +262,85 @@ setDockerComposeYML() {
 
   filename=$(basename "$file")
   dirname=$(dirname "$file")
+  dirname=$(echo "$dirname" | tail -n 1)
 
 
-  template=$("/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml")
+  echo "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
+  template=$(cat "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml")
   #echo "$template"
+  if [ -z "$template" ]; then
+    echo "Template error"
+    rm -rf "$lock_file_path"
+    exit 1
+  fi
 
   # template=$(echo "$template" | sed "s/__SOURCE__/$dirname/g")
   # template=$(echo "$template" | sed "s/__INPUT__/$filename/g")
 
-  extPort=$(getExtPort)
-
-  template=$(echo "$template" | sed "s|__EXT_PORT__|$extPort|g")
-  template=$(echo "$template" | sed "s|__SOURCE__|$dirname|g")
-  template=$(echo "$template" | sed "s|__SOURCE_INPUT__|$dirname|g")
-  template=$(echo "$template" | sed "s|__SOURCE_APP__|/tmp/docker-app/${PROJECT_NAME}/app|g")
-  filename=$(echo "$filename" | sed 's/&/\\&/g')
-  echo $filename
-  template=$(echo "$template" | sed "s|__INPUT__|$filename|g")
+  if [[ "$template" == *__EXT_PORT__* ]]; then
+    result=$(getExtPort)
+    result="${result%%$'\n'*}"
+#     echo "result: ${result}"
+    # template=$(echo "$template" | sed "s|__EXT_PORT__|\"${result}\"|g") || echo "result: ${result}"
+    template="${template//__EXT_PORT__/${result}}" || echo "result: ${result}"
+  fi
+  if [[ "$template" == *__SOURCE__* ]]; then
+    #echo "dirname: ${dirname}"
+    #template=$(echo "$template" | sed "s|__SOURCE__|$dirname|g")
+    template="${template//__SOURCE__/${dirname}}" || echo "dirname SOURCE: ${dirname}"
+  fi
+  if [[ "$template" == *__SOURCE_INPUT__* ]]; then
+    # echo "dirname: ${dirname}"
+    # template=$(echo "$template" | sed "s|__SOURCE_INPUT__|$dirname|g")
+    template="${template//__SOURCE_INPUT__/${dirname}}" || echo "dirname SOURCE_INPUT: ${dirname}"
+  fi
+  if [[ "$template" == *__SOURCE_APP__* ]]; then
+    template=$(echo "$template" | sed "s|__SOURCE_APP__|/tmp/docker-app/${PROJECT_NAME}/app|g")
+  fi
+  if [[ "$template" == *__INPUT__* ]]; then
+    filename=$(echo "$filename" | sed 's/&/\\&/g')
+    echo $filename
+    template=$(echo "$template" | sed "s|__INPUT__|$filename|g")
+  fi
 
   echo "$template" > "/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
+
+  if [ -z "$template" ]; then
+    echo "Template error"
+    rm -rf "$lock_file_path"
+    exit 1
+  fi
+
 }
 
 getExtPort() {
   local ext_port
 
+  cat "/tmp/docker-app/docker-web-ext-port.txt"
+
   # Check if the file exists
   if [ -f "/tmp/docker-app/docker-web-ext-port.txt" ]; then
     # Read ext_port from the file
     ext_port=$(<"/tmp/docker-app/docker-web-ext-port.txt")
-
     # Check if ext_port is occupied, and if it is, increment it until it's available
     while nc -z localhost "$ext_port"; do
       ext_port=$((ext_port + 1))
       if [ "$ext_port" -gt 59999 ]; then
         ext_port=50000
+        break
       fi
     done
+
+    # Save ext_port to the file
+    echo "$ext_port" > "/tmp/docker-app/docker-web-ext-port.txt"
+
+    # Return ext_port
+    echo "${ext_port}"
   else
     # If the file does not exist, set ext_port to 50000
     ext_port=50000
+    echo "${ext_port}"
   fi
-
-  # Save ext_port to the file
-  echo "$ext_port" > "/tmp/docker-app/docker-web-ext-port.txt"
-
-  # Return ext_port
-  echo "$ext_port"
 }
 
 # ========
