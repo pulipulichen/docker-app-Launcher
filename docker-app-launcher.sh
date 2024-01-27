@@ -86,8 +86,16 @@ getExtPort() {
     # Read ext_port from the file
     ext_port=$(<"/tmp/docker-app/docker-web-ext-port.txt")
     # Check if ext_port is occupied, and if it is, increment it until it's available
-    nc -z localhost "$ext_port";
+
     while docker ps | grep -q ":$ext_port->"; do
+      ext_port=$((ext_port + 1))
+      if [ "$ext_port" -gt 59999 ]; then
+        ext_port=50000
+        break
+      fi
+    done
+
+    while nc -z localhost "$ext_port"; do
       ext_port=$((ext_port + 1))
       if [ "$ext_port" -gt 59999 ]; then
         ext_port=50000
