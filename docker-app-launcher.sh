@@ -65,7 +65,8 @@ getRealpath() {
   path="$1"
 
   if [[ $path == /* || -z $path ]]; then
-    echo "$path"
+    #echo "$path"
+    :
   elif command -v realpath &> /dev/null; then
     path=`realpath "${path}"`
   else
@@ -242,7 +243,9 @@ fi
 
 var="$3"
 var=$(getRealpath "${var}")
+echo "========"
 echo $var
+echo "========"
 useParams="true"
 WORK_DIR=`pwd`
 if [ "$INPUT_FILE" != "false" ]; then
