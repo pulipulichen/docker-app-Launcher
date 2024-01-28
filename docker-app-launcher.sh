@@ -198,12 +198,17 @@ fi
 # Using grep and awk to extract the public port from the docker-compose.yml file
 PUBLIC_PORT="false"
 # Step 2: Read the public port from the docker-compose.yml file
-DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
+# DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
 
-# Check if the default Docker Compose file exists
+# # Check if the default Docker Compose file exists
+# if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
+#   # If the file doesn't exist, set an alternative file path
+#   DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
+# fi
+DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
 if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
   # If the file doesn't exist, set an alternative file path
-  DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
+  DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
 fi
 
 if [ -f "$DOCKER_COMPOSE_FILE" ]; then
