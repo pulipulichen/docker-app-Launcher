@@ -180,9 +180,9 @@ fi
 
 mkdir -p "/tmp/docker-app/${PROJECT_NAME}.cache"
 
-cmp --silent "/tmp/docker-app/${PROJECT_NAME}/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/Dockerfile" && cmp --silent "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/package.json" || docker-compose build
+cmp --silent "/tmp/docker-app/${PROJECT_NAME}/app-build/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/app-build/Dockerfile" && cmp --silent "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/package.json" || docker-compose build
 
-cp "/tmp/docker-app/${PROJECT_NAME}/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/"
+cp "/tmp/docker-app/${PROJECT_NAME}/app-build/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/app-build/"
 cp "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/"
 
 # =================
