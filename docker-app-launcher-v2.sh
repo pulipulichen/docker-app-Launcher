@@ -373,7 +373,7 @@ setDockerComposeYML() {
 
   #echo "$DIRNAME"
   if echo "$template" | grep -q './data:'; then
-    template=$(echo "$template" | sed "s|\./data:|${DIRNAME}:|g")
+    template=$(echo "$template" | sed "s|\./data:|${DIRNAME}/data:|g")
   fi
 
   echo "$template" > "/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
@@ -464,7 +464,7 @@ runDockerCompose() {
     cloudflare_url=$(getCloudflarePublicURL)
     # cloudflare_url=$(<"${SCRIPT_PATH}/${PROJECT_NAME}/.cloudflare.url")
 
-    sleep 10
+    sleep 30
     #/tmp/.cloudflared --url "http://127.0.0.1:$PUBLIC_PORT" > /tmp/.cloudflared.out
 
     echo "================================================================"
@@ -491,7 +491,7 @@ runDockerCompose() {
     # This is just to keep the script running until the user interrupts it
     # You might replace this with an actual running process that should keep the script alive
     while true; do
-      sleep 1
+      sleep 30
     done
   fi
 }
@@ -510,7 +510,10 @@ cleanup() {
     rm "${lock_file_path}"
   fi
   #exit 1
+  exit 0
 }
+
+trap cleanup SIGINT
 
 # -----------------
 # 執行指令
