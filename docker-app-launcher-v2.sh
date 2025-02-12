@@ -370,10 +370,9 @@ setDockerComposeYML() {
     echo $filename
     template=$(echo "$template" | sed "s|__INPUT__|$filename|g")
   fi
-  if [[ "$template" == *- \"./data:* ]]; then
-    #echo "dirname: ${dirname}"
-    #template=$(echo "$template" | sed "s|__SOURCE__|$dirname|g")
-    template="${template//- \"./data:/${dirname}}" || echo "dirname SOURCE: ${dirname}"
+  
+  if echo "$template" | grep -q '^- "./data:'; then
+    template=$(echo "$template" | sed 's|^- "\./data:|^- "${dirname}:|g')
   fi
 
   echo "$template" > "/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
