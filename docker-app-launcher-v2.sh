@@ -113,6 +113,7 @@ getExtPort() {
     # If the file does not exist, set ext_port to 50000
     ext_port=50000
     echo "$ext_port" > "/tmp/docker-app/docker-web-ext-port.txt"
+
     echo "${ext_port}"
   fi
 }
@@ -188,8 +189,9 @@ cp "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAM
 # 從docker-compose-template.yml來判斷參數
 
 INPUT_FILE="false"
-if [ -f "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml" ]; then
-  if grep -q "__INPUT__" "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"; then
+DOCKER_COMPOSE_TEMPLATE_FILE="/tmp/docker-app/${PROJECT_NAME}/app-build/docker-compose-template.yml"
+if [ -f "${DOCKER_COMPOSE_TEMPLATE_FILE}" ]; then
+  if grep -q "__INPUT__" "${DOCKER_COMPOSE_TEMPLATE_FILE}"; then
     INPUT_FILE="true"
   fi
 fi
@@ -206,16 +208,16 @@ PUBLIC_PORT="false"
 #   # If the file doesn't exist, set an alternative file path
 #   DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
 # fi
-DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
+DOCKER_COMPOSE_FILE="${DOCKER_COMPOSE_TEMPLATE_FILE}"
 if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
   # If the file doesn't exist, set an alternative file path
-  DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
+  DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/app-build/docker-compose.yml"
 fi
 
 if [ -f "$DOCKER_COMPOSE_FILE" ]; then
   #PUBLIC_PORT=$(awk '/ports:/{flag=1} flag && /- "[0-9]+:[0-9]+"/{split($2, port, ":"); gsub(/"/, "", port[1]); print port[1]; flag=0}' "$DOCKER_COMPOSE_FILE")
-  echo "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
-  template=$(cat "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml")
+  #echo "${DOCKER_COMPOSE_FILE}"
+  template=$(cat "${DOCKER_COMPOSE_FILE}")
   echo $template
   if [[ $template == *__EXT_PORT__* ]]; then
     PUBLIC_PORT=$(getExtPort)
@@ -324,8 +326,8 @@ setDockerComposeYML() {
   dirname=$(echo "$dirname" | tail -n 1)
 
 
-  echo "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
-  template=$(cat "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml")
+  #echo "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
+  template=$(cat "${DOCKER_COMPOSE_TEMPLATE_FILE}")
   #echo "$template"
   if [ -z "$template" ]; then
     echo "Template error"
@@ -367,6 +369,11 @@ setDockerComposeYML() {
     filename=$(echo "$filename" | sed 's/&/\\&/g')
     echo $filename
     template=$(echo "$template" | sed "s|__INPUT__|$filename|g")
+  fi
+  if [[ "$template" == *- \"./data:* ]]; then
+    #echo "dirname: ${dirname}"
+    #template=$(echo "$template" | sed "s|__SOURCE__|$dirname|g")
+    template="${template//- \"./data:/${dirname}}" || echo "dirname SOURCE: ${dirname}"
   fi
 
   echo "$template" > "/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
@@ -426,15 +433,30 @@ runDockerCompose() {
     trap 'cleanup' INT
 
     if [ "$must_sudo" == "false" ]; then
-      docker-compose down
-      if ! docker-compose up --build -d; then
-        echo "Error occurred. Trying with sudo..."
-        sudo docker-compose down
-        sudo docker-compose up --build -d
+      if command -v docker-compose &> /dev/null; then
+        docker-compose down
+        if ! docker-compose up --build -d; then
+          echo "Error occurred. Trying with sudo..."
+          sudo docker-compose down
+          sudo docker-compose up --build -d
+        fi
+      else
+        docker compose down
+        if ! docker compose up --build -d; then
+          echo "Error occurred. Trying with sudo..."
+          sudo docker compose down
+          sudo docker compose up --build -d
+        fi
       fi
     else
-      sudo docker-compose down
-      sudo docker-compose up --build -d
+      if command -v docker-compose &> /dev/null; then
+        sudo docker-compose down
+        sudo docker-compose up --build -d
+      else
+        sudo docker compose down
+        sudo docker compose up --build -d
+      fi
+        
     fi
 
     waitForConntaction $PUBLIC_PORT
@@ -477,7 +499,13 @@ runDockerCompose() {
 # Function to handle clean-up on script exit or Ctrl+C
 cleanup() {
   echo "Stopping the Docker container..."
-  docker-compose down
+
+  if command -v docker-compose &> /dev/null; then
+    docker-compose down
+  else
+    docker compose down
+  fi
+  
   if [ -f "${lock_file_path}" ]; then
     rm "${lock_file_path}"
   fi
