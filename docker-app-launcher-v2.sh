@@ -283,7 +283,7 @@ cloudflare_file="${dirname}/${PROJECT_NAME}/.cloudflare.url"
 cloudflare_file_app="/tmp/docker-app/${PROJECT_NAME}/data/.cloudflare.url"
 
 getCloudflarePublicURL() {
-
+  CLOUDFLARE_URL=$1
 
   # echo "c ${cloudflare_file}"
 
@@ -297,13 +297,8 @@ getCloudflarePublicURL() {
   elapsed_time=0
 
   while [ $elapsed_time -lt $timeout ]; do
-    if [ -s "$cloudflare_file" ] && [ -f "$cloudflare_file" ]; then
-        echo $(<"$cloudflare_file")
-        exit 0
-    fi
-
-    if [ -s "$cloudflare_file_app" ] && [ -f "$cloudflare_file_app" ]; then
-        echo $(<"$cloudflare_file_app")
+    if [ -s "$CLOUDFLARE_URL" ] && [ -f "$CLOUDFLARE_URL" ]; then
+        echo $(<"$CLOUDFLARE_URL")
         exit 0
     fi
 
@@ -404,6 +399,15 @@ waitForConntaction() {
 }
 
 runDockerCompose() {
+  FILE="$1"
+  #echo "input: ${file}"
+
+  FILENAME=$(basename "$FILE")
+  DIRNAME=$(dirname "$FILE")
+  DIRNAME=$(echo "$DIRNAME" | tail -n 1)
+
+  # ===============
+
   must_sudo="false"
   if [[ "$(uname)" == "Darwin" ]]; then
     if ! chown -R $(whoami) ~/.docker; then
@@ -461,10 +465,15 @@ runDockerCompose() {
 
     waitForConntaction $PUBLIC_PORT
 
-    cloudflare_url=$(getCloudflarePublicURL)
+    CLOUDFLARE_URL="${DIRNAME}/data/.cloudflare.url"
+    if [ -f "${CLOUDFLARE_URL}" ]; then
+      rm -f "${CLOUDFLARE_URL}"
+    fi
+
+    cloudflare_url=$(getCloudflarePublicURL "${CLOUDFLARE_URL}")
     # cloudflare_url=$(<"${SCRIPT_PATH}/${PROJECT_NAME}/.cloudflare.url")
 
-    sleep 30
+    sleep 10
     #/tmp/.cloudflared --url "http://127.0.0.1:$PUBLIC_PORT" > /tmp/.cloudflared.out
 
     echo "================================================================"
@@ -531,7 +540,7 @@ if [ "$INPUT_FILE" != "false" ]; then
       cd "/tmp/docker-app/${PROJECT_NAME}"
 
       setDockerComposeYML "${var}"
-      runDockerCompose
+      runDockerCompose "${var}"
     done
   else
     if [ ! -f "${var}" ]; then
@@ -539,7 +548,7 @@ if [ "$INPUT_FILE" != "false" ]; then
     else
       setDockerComposeYML "${var}"
 
-      runDockerCompose
+      runDockerCompose "${var}"
     fi
   fi
 else
@@ -551,7 +560,7 @@ else
   # cat "/tmp/${PROJECT_NAME}/docker-compose.yml"
   # exit 0
   rm -f "${cloudflare_file}"
-  runDockerCompose
+  runDockerCompose "${SCRIPT_PATH}"
 fi
 
 # =================================================================
