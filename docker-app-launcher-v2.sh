@@ -180,9 +180,9 @@ fi
 
 mkdir -p "/tmp/docker-app/${PROJECT_NAME}.cache"
 
-cmp --silent "/tmp/docker-app/${PROJECT_NAME}/app-build/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/app-build/Dockerfile" && cmp --silent "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/package.json" || docker-compose build
+cmp --silent "/tmp/docker-app/${PROJECT_NAME}/app-build/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/Dockerfile" && cmp --silent "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/package.json" || docker-compose build
 
-cp "/tmp/docker-app/${PROJECT_NAME}/app-build/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/app-build/"
+cp "/tmp/docker-app/${PROJECT_NAME}/app-build/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/"
 cp "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/"
 
 # =================
@@ -280,7 +280,7 @@ fi
 
 dirname=$(dirname "$SCRIPT_PATH")
 cloudflare_file="${dirname}/${PROJECT_NAME}/.cloudflare.url"
-cloudflare_file_app="/tmp/docker-app/${PROJECT_NAME}/app/.cloudflare.url"
+cloudflare_file_app="/tmp/docker-app/${PROJECT_NAME}/data/.cloudflare.url"
 
 getCloudflarePublicURL() {
 
@@ -318,12 +318,12 @@ getCloudflarePublicURL() {
 # ----------------------------------------------------------------
 
 setDockerComposeYML() {
-  file="$1"
+  FILE="$1"
   #echo "input: ${file}"
 
-  filename=$(basename "$file")
-  dirname=$(dirname "$file")
-  dirname=$(echo "$dirname" | tail -n 1)
+  FILENAME=$(basename "$FILE")
+  DIRNAME=$(dirname "$FILE")
+  DIRNAME=$(echo "$DIRNAME" | tail -n 1)
 
 
   #echo "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
@@ -335,8 +335,8 @@ setDockerComposeYML() {
     exit 1
   fi
 
-  # template=$(echo "$template" | sed "s/__SOURCE__/$dirname/g")
-  # template=$(echo "$template" | sed "s/__INPUT__/$filename/g")
+  # template=$(echo "$template" | sed "s/__SOURCE__/$DIRNAME/g")
+  # template=$(echo "$template" | sed "s/__INPUT__/$FILENAME/g")
 
   if [[ "$template" == *__EXT_PORT__* ]]; then
     result="${PUBLIC_PORT}"
@@ -353,27 +353,27 @@ setDockerComposeYML() {
     template="${template//__NETWORK__/docker_web_network_${result}}" || echo "docker_web_network_result: docker_web_network_${result}"
   fi
   if [[ "$template" == *__SOURCE__* ]]; then
-    #echo "dirname: ${dirname}"
-    #template=$(echo "$template" | sed "s|__SOURCE__|$dirname|g")
-    template="${template//__SOURCE__/${dirname}}" || echo "dirname SOURCE: ${dirname}"
+    #echo "DIRNAME: ${DIRNAME}"
+    #template=$(echo "$template" | sed "s|__SOURCE__|$DIRNAME|g")
+    template="${template//__SOURCE__/${DIRNAME}}" || echo "dirname SOURCE: ${DIRNAME}"
   fi
   if [[ "$template" == *__SOURCE_INPUT__* ]]; then
-    # echo "dirname: ${dirname}"
-    # template=$(echo "$template" | sed "s|__SOURCE_INPUT__|$dirname|g")
-    template="${template//__SOURCE_INPUT__/${dirname}}" || echo "dirname SOURCE_INPUT: ${dirname}"
+    # echo "dirname: ${DIRNAME}"
+    # template=$(echo "$template" | sed "s|__SOURCE_INPUT__|$DIRNAME|g")
+    template="${template//__SOURCE_INPUT__/${DIRNAME}}" || echo "dirname SOURCE_INPUT: ${DIRNAME}"
   fi
   if [[ "$template" == *__SOURCE_APP__* ]]; then
     template=$(echo "$template" | sed "s|__SOURCE_APP__|/tmp/docker-app/${PROJECT_NAME}/app|g")
   fi
   if [[ "$template" == *__INPUT__* ]]; then
-    filename=$(echo "$filename" | sed 's/&/\\&/g')
-    echo $filename
-    template=$(echo "$template" | sed "s|__INPUT__|$filename|g")
+    FILENAME=$(echo "$FILENAME" | sed 's/&/\\&/g')
+    echo $FILENAME
+    template=$(echo "$template" | sed "s|__INPUT__|$FILENAME|g")
   fi
 
-  if echo "$TEMPLATE" | grep -q './data:'; then
-    TEMPLATE=$(echo "$TEMPLATE" | sed "s|\./data:|${SOURCE_DIRNAME}:|g")
-    echo ok
+  #echo "$DIRNAME"
+  if echo "$template" | grep -q './data:'; then
+    template=$(echo "$template" | sed "s|\./data:|${DIRNAME}:|g")
   fi
 
   echo "$template" > "/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
@@ -474,7 +474,7 @@ runDockerCompose() {
 
     # openURL "http://127.0.0.1:$PUBLIC_PORT"
     # echo "${cloudflare_url}"
-    if { [ -z "$cloudflare_url" ] || [ "$cloudflare_url" == "false" ]; } && [ project_inited == true ]; then
+    if { [ -z "$cloudflare_url" ] || [ -n "$cloudflare_url" ] || [ "$cloudflare_url" == "false" ]; } && [ project_inited == true ]; then
       openURL "http://127.0.0.1:$PUBLIC_PORT"
     else
       openURL "${cloudflare_url}"
