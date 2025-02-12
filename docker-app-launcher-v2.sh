@@ -370,7 +370,7 @@ setDockerComposeYML() {
     echo $filename
     template=$(echo "$template" | sed "s|__INPUT__|$filename|g")
   fi
-  
+
   if echo "$template" | grep -q '^- "./data:'; then
     template=$(echo "$template" | sed 's|^- "\./data:|^- "${dirname}:|g')
   fi
@@ -547,7 +547,7 @@ else
   # cat "/tmp/${PROJECT_NAME}/docker-compose.yml"
   # exit 0
   rm -f "${cloudflare_file}"
-  runDockerCompose
+  #runDockerCompose
 fi
 
 # =================================================================
