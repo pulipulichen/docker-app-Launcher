@@ -481,7 +481,7 @@ cleanup() {
   if [ -f "${lock_file_path}" ]; then
     rm "${lock_file_path}"
   fi
-  #exit 1
+  exit 1
 }
 
 # -----------------
