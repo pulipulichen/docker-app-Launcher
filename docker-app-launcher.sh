@@ -20,9 +20,9 @@ if [ -e "$lock_file_path" ]; then
     current_time=$(date +%s)
     timeout_seconds=600
 
-    if [ $((current_time - file_creation_time)) -gt $timeout_seconds ]; then
+    #if [ $((current_time - file_creation_time)) -gt $timeout_seconds ]; then
         # rm "$lock_file_path"
-    fi
+    #fi
 fi
 
 # =================================================================
