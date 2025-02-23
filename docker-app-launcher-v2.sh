@@ -18,7 +18,7 @@ if [ -e "$lock_file_path" ]; then
     # Get the creation time of the file in seconds since epoch
     file_creation_time=$(stat -c %W "$lock_file_path")
     current_time=$(date +%s)
-    timeout_seconds=180
+    timeout_seconds=60
 
     if [ $((current_time - file_creation_time)) -gt $timeout_seconds ]; then
         rm "$lock_file_path"
@@ -113,6 +113,7 @@ getExtPort() {
     # If the file does not exist, set ext_port to 50000
     ext_port=50000
     echo "$ext_port" > "/tmp/docker-app/docker-web-ext-port.txt"
+
     echo "${ext_port}"
   fi
 }
@@ -179,17 +180,18 @@ fi
 
 mkdir -p "/tmp/docker-app/${PROJECT_NAME}.cache"
 
-cmp --silent "/tmp/docker-app/${PROJECT_NAME}/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/Dockerfile" && cmp --silent "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/package.json" || docker-compose build
+cmp --silent "/tmp/docker-app/${PROJECT_NAME}/app-build/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/Dockerfile" && cmp --silent "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/package.json" || docker-compose build
 
-cp "/tmp/docker-app/${PROJECT_NAME}/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/"
+cp "/tmp/docker-app/${PROJECT_NAME}/app-build/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/"
 cp "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/"
 
 # =================
 # 從docker-compose-template.yml來判斷參數
 
 INPUT_FILE="false"
-if [ -f "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml" ]; then
-  if grep -q "__INPUT__" "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"; then
+DOCKER_COMPOSE_TEMPLATE_FILE="/tmp/docker-app/${PROJECT_NAME}/app-build/docker-compose-template.yml"
+if [ -f "${DOCKER_COMPOSE_TEMPLATE_FILE}" ]; then
+  if grep -q "__INPUT__" "${DOCKER_COMPOSE_TEMPLATE_FILE}"; then
     INPUT_FILE="true"
   fi
 fi
@@ -206,16 +208,16 @@ PUBLIC_PORT="false"
 #   # If the file doesn't exist, set an alternative file path
 #   DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
 # fi
-DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
+DOCKER_COMPOSE_FILE="${DOCKER_COMPOSE_TEMPLATE_FILE}"
 if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
   # If the file doesn't exist, set an alternative file path
-  DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
+  DOCKER_COMPOSE_FILE="/tmp/docker-app/${PROJECT_NAME}/app-build/docker-compose.yml"
 fi
 
 if [ -f "$DOCKER_COMPOSE_FILE" ]; then
   #PUBLIC_PORT=$(awk '/ports:/{flag=1} flag && /- "[0-9]+:[0-9]+"/{split($2, port, ":"); gsub(/"/, "", port[1]); print port[1]; flag=0}' "$DOCKER_COMPOSE_FILE")
-  echo "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
-  template=$(cat "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml")
+  #echo "${DOCKER_COMPOSE_FILE}"
+  template=$(cat "${DOCKER_COMPOSE_FILE}")
   echo $template
   if [[ $template == *__EXT_PORT__* ]]; then
     PUBLIC_PORT=$(getExtPort)
@@ -278,10 +280,10 @@ fi
 
 dirname=$(dirname "$SCRIPT_PATH")
 cloudflare_file="${dirname}/${PROJECT_NAME}/.cloudflare.url"
-cloudflare_file_app="/tmp/docker-app/${PROJECT_NAME}/app/.cloudflare.url"
+cloudflare_file_app="/tmp/docker-app/${PROJECT_NAME}/data/.cloudflare.url"
 
 getCloudflarePublicURL() {
-
+  CLOUDFLARE_URL=$1
 
   # echo "c ${cloudflare_file}"
 
@@ -295,13 +297,8 @@ getCloudflarePublicURL() {
   elapsed_time=0
 
   while [ $elapsed_time -lt $timeout ]; do
-    if [ -s "$cloudflare_file" ] && [ -f "$cloudflare_file" ]; then
-        echo $(<"$cloudflare_file")
-        exit 0
-    fi
-
-    if [ -s "$cloudflare_file_app" ] && [ -f "$cloudflare_file_app" ]; then
-        echo $(<"$cloudflare_file_app")
+    if [ -s "$CLOUDFLARE_URL" ] && [ -f "$CLOUDFLARE_URL" ]; then
+        echo $(<"$CLOUDFLARE_URL")
         exit 0
     fi
 
@@ -316,16 +313,16 @@ getCloudflarePublicURL() {
 # ----------------------------------------------------------------
 
 setDockerComposeYML() {
-  file="$1"
+  FILE="$1"
   #echo "input: ${file}"
 
-  filename=$(basename "$file")
-  dirname=$(dirname "$file")
-  dirname=$(echo "$dirname" | tail -n 1)
+  FILENAME=$(basename "$FILE")
+  DIRNAME=$(dirname "$FILE")
+  DIRNAME=$(echo "$DIRNAME" | tail -n 1)
 
 
-  echo "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
-  template=$(cat "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml")
+  #echo "/tmp/docker-app/${PROJECT_NAME}/docker-build/image/docker-compose-template.yml"
+  template=$(cat "${DOCKER_COMPOSE_TEMPLATE_FILE}")
   #echo "$template"
   if [ -z "$template" ]; then
     echo "Template error"
@@ -333,8 +330,8 @@ setDockerComposeYML() {
     exit 1
   fi
 
-  # template=$(echo "$template" | sed "s/__SOURCE__/$dirname/g")
-  # template=$(echo "$template" | sed "s/__INPUT__/$filename/g")
+  # template=$(echo "$template" | sed "s/__SOURCE__/$DIRNAME/g")
+  # template=$(echo "$template" | sed "s/__INPUT__/$FILENAME/g")
 
   if [[ "$template" == *__EXT_PORT__* ]]; then
     result="${PUBLIC_PORT}"
@@ -351,22 +348,27 @@ setDockerComposeYML() {
     template="${template//__NETWORK__/docker_web_network_${result}}" || echo "docker_web_network_result: docker_web_network_${result}"
   fi
   if [[ "$template" == *__SOURCE__* ]]; then
-    #echo "dirname: ${dirname}"
-    #template=$(echo "$template" | sed "s|__SOURCE__|$dirname|g")
-    template="${template//__SOURCE__/${dirname}}" || echo "dirname SOURCE: ${dirname}"
+    #echo "DIRNAME: ${DIRNAME}"
+    #template=$(echo "$template" | sed "s|__SOURCE__|$DIRNAME|g")
+    template="${template//__SOURCE__/${DIRNAME}}" || echo "dirname SOURCE: ${DIRNAME}"
   fi
   if [[ "$template" == *__SOURCE_INPUT__* ]]; then
-    # echo "dirname: ${dirname}"
-    # template=$(echo "$template" | sed "s|__SOURCE_INPUT__|$dirname|g")
-    template="${template//__SOURCE_INPUT__/${dirname}}" || echo "dirname SOURCE_INPUT: ${dirname}"
+    # echo "dirname: ${DIRNAME}"
+    # template=$(echo "$template" | sed "s|__SOURCE_INPUT__|$DIRNAME|g")
+    template="${template//__SOURCE_INPUT__/${DIRNAME}}" || echo "dirname SOURCE_INPUT: ${DIRNAME}"
   fi
   if [[ "$template" == *__SOURCE_APP__* ]]; then
     template=$(echo "$template" | sed "s|__SOURCE_APP__|/tmp/docker-app/${PROJECT_NAME}/app|g")
   fi
   if [[ "$template" == *__INPUT__* ]]; then
-    filename=$(echo "$filename" | sed 's/&/\\&/g')
-    echo $filename
-    template=$(echo "$template" | sed "s|__INPUT__|$filename|g")
+    FILENAME=$(echo "$FILENAME" | sed 's/&/\\&/g')
+    echo $FILENAME
+    template=$(echo "$template" | sed "s|__INPUT__|$FILENAME|g")
+  fi
+
+  #echo "$DIRNAME"
+  if echo "$template" | grep -q './data:'; then
+    template=$(echo "$template" | sed "s|\./data:|${DIRNAME}/data:|g")
   fi
 
   echo "$template" > "/tmp/docker-app/${PROJECT_NAME}/docker-compose.yml"
@@ -397,6 +399,15 @@ waitForConntaction() {
 }
 
 runDockerCompose() {
+  FILE="$1"
+  #echo "input: ${file}"
+
+  FILENAME=$(basename "$FILE")
+  DIRNAME=$(dirname "$FILE")
+  DIRNAME=$(echo "$DIRNAME" | tail -n 1)
+
+  # ===============
+
   must_sudo="false"
   if [[ "$(uname)" == "Darwin" ]]; then
     if ! chown -R $(whoami) ~/.docker; then
@@ -426,20 +437,40 @@ runDockerCompose() {
     trap 'cleanup' INT
 
     if [ "$must_sudo" == "false" ]; then
-      docker-compose down
-      if ! docker-compose up --build -d; then
-        echo "Error occurred. Trying with sudo..."
-        sudo docker-compose down
-        sudo docker-compose up --build -d
+      if command -v docker-compose &> /dev/null; then
+        docker-compose down
+        if ! docker-compose up --build -d; then
+          echo "Error occurred. Trying with sudo..."
+          sudo docker-compose down
+          sudo docker-compose up --build -d
+        fi
+      else
+        docker compose down
+        if ! docker compose up --build -d; then
+          echo "Error occurred. Trying with sudo..."
+          sudo docker compose down
+          sudo docker compose up --build -d
+        fi
       fi
     else
-      sudo docker-compose down
-      sudo docker-compose up --build -d
+      if command -v docker-compose &> /dev/null; then
+        sudo docker-compose down
+        sudo docker-compose up --build -d
+      else
+        sudo docker compose down
+        sudo docker compose up --build -d
+      fi
+        
     fi
 
     waitForConntaction $PUBLIC_PORT
 
-    cloudflare_url=$(getCloudflarePublicURL)
+    CLOUDFLARE_URL="${DIRNAME}/data/.cloudflare.url"
+    if [ -f "${CLOUDFLARE_URL}" ]; then
+      rm -f "${CLOUDFLARE_URL}"
+    fi
+
+    cloudflare_url=$(getCloudflarePublicURL "${CLOUDFLARE_URL}")
     # cloudflare_url=$(<"${SCRIPT_PATH}/${PROJECT_NAME}/.cloudflare.url")
 
     sleep 10
@@ -452,7 +483,7 @@ runDockerCompose() {
 
     # openURL "http://127.0.0.1:$PUBLIC_PORT"
     # echo "${cloudflare_url}"
-    if { [ -z "$cloudflare_url" ] || [ "$cloudflare_url" == "false" ]; } && [ project_inited == true ]; then
+    if { [ -z "$cloudflare_url" ] || [ -n "$cloudflare_url" ] || [ "$cloudflare_url" == "false" ]; } && [ project_inited == true ]; then
       openURL "http://127.0.0.1:$PUBLIC_PORT"
     else
       openURL "${cloudflare_url}"
@@ -469,7 +500,7 @@ runDockerCompose() {
     # This is just to keep the script running until the user interrupts it
     # You might replace this with an actual running process that should keep the script alive
     while true; do
-      sleep 1
+      sleep 30
     done
   fi
 }
@@ -477,12 +508,21 @@ runDockerCompose() {
 # Function to handle clean-up on script exit or Ctrl+C
 cleanup() {
   echo "Stopping the Docker container..."
-  docker-compose down
+
+  if command -v docker-compose &> /dev/null; then
+    docker-compose down
+  else
+    docker compose down
+  fi
+  
   if [ -f "${lock_file_path}" ]; then
     rm "${lock_file_path}"
   fi
-  exit 1
+  #exit 1
+  exit 0
 }
+
+trap cleanup SIGINT
 
 # -----------------
 # 執行指令
@@ -500,7 +540,7 @@ if [ "$INPUT_FILE" != "false" ]; then
       cd "/tmp/docker-app/${PROJECT_NAME}"
 
       setDockerComposeYML "${var}"
-      runDockerCompose
+      runDockerCompose "${var}"
     done
   else
     if [ ! -f "${var}" ]; then
@@ -508,7 +548,7 @@ if [ "$INPUT_FILE" != "false" ]; then
     else
       setDockerComposeYML "${var}"
 
-      runDockerCompose
+      runDockerCompose "${var}"
     fi
   fi
 else
@@ -520,7 +560,7 @@ else
   # cat "/tmp/${PROJECT_NAME}/docker-compose.yml"
   # exit 0
   rm -f "${cloudflare_file}"
-  runDockerCompose
+  runDockerCompose "${SCRIPT_PATH}"
 fi
 
 # =================================================================
