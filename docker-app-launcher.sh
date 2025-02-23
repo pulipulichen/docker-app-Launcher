@@ -18,7 +18,7 @@ if [ -e "$lock_file_path" ]; then
     # Get the creation time of the file in seconds since epoch
     file_creation_time=$(stat -c %W "$lock_file_path")
     current_time=$(date +%s)
-    timeout_seconds=60
+    timeout_seconds=180
 
     if [ $((current_time - file_creation_time)) -gt $timeout_seconds ]; then
         rm "$lock_file_path"
