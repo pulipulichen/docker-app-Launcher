@@ -420,13 +420,13 @@ runDockerCompose() {
         sudo docker-compose down
         sudo docker-compose up --build
 
-        sudo chmod 777 -R "$file"
+        # sudo chmod 777 -R "$file"
       fi
     else
       sudo docker-compose down
       sudo docker-compose up --build
 
-      sudo chmod 777 -R "$file"
+      # sudo chmod 777 -R "$file"
     fi
     # exit 0
   else
