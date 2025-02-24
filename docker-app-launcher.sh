@@ -408,6 +408,8 @@ runDockerCompose() {
     fi
   fi
 
+  file="$1"
+
   #echo "m ${must_sudo}"
 
   if [ "$PUBLIC_PORT" == "false" ]; then
@@ -417,10 +419,14 @@ runDockerCompose() {
         echo "Error occurred. Trying with sudo..."
         sudo docker-compose down
         sudo docker-compose up --build
+
+        sudo chmod 777 -R "$file"
       fi
     else
       sudo docker-compose down
       sudo docker-compose up --build
+
+      sudo chmod 777 -R "$file"
     fi
     # exit 0
   else
@@ -502,7 +508,7 @@ if [ "$INPUT_FILE" != "false" ]; then
       cd "/tmp/docker-app/${PROJECT_NAME}"
 
       setDockerComposeYML "${var}"
-      runDockerCompose
+      runDockerCompose "${var}"
     done
   else
     if [ ! -f "${var}" ]; then
@@ -510,7 +516,7 @@ if [ "$INPUT_FILE" != "false" ]; then
     else
       setDockerComposeYML "${var}"
 
-      runDockerCompose
+      runDockerCompose "${var}"
     fi
   fi
 else
@@ -522,7 +528,7 @@ else
   # cat "/tmp/${PROJECT_NAME}/docker-compose.yml"
   # exit 0
   rm -f "${cloudflare_file}"
-  runDockerCompose
+  runDockerCompose "${SCRIPT_PATH}"
 fi
 
 # =================================================================
