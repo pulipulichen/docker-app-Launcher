@@ -9,6 +9,14 @@ fi
 # Set the first parameter as PROJECT_NAME
 PROJECT_NAME=$1
 
+# Determine the correct docker compose command
+DOCKER_COMPOSE_CMD=""
+if command -v docker-compose >/dev/null 2>&1; then
+  DOCKER_COMPOSE_CMD="docker-compose"
+elif docker compose version >/dev/null 2>&1; then
+  DOCKER_COMPOSE_CMD="docker compose"
+fi
+
 # =================================================================
 # 鎖定
 
@@ -182,7 +190,7 @@ fi
 
 mkdir -p "/tmp/docker-app/${PROJECT_NAME}.cache"
 
-cmp --silent "/tmp/docker-app/${PROJECT_NAME}/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/Dockerfile" && cmp --silent "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/package.json" || docker-compose build
+cmp --silent "/tmp/docker-app/${PROJECT_NAME}/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/Dockerfile" && cmp --silent "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/package.json" || ${DOCKER_COMPOSE_CMD} build
 
 cp "/tmp/docker-app/${PROJECT_NAME}/Dockerfile" "/tmp/docker-app/${PROJECT_NAME}.cache/"
 cp "/tmp/docker-app/${PROJECT_NAME}/package.json" "/tmp/docker-app/${PROJECT_NAME}.cache/"
@@ -415,17 +423,17 @@ runDockerCompose() {
 
   if [ "$PUBLIC_PORT" == "false" ]; then
     if [ "$must_sudo" == "false" ]; then
-      docker-compose down
-      if ! docker-compose up --build; then
+      ${DOCKER_COMPOSE_CMD} down
+      if ! ${DOCKER_COMPOSE_CMD} up --build; then
         echo "Error occurred. Trying with sudo..."
-        sudo docker-compose down
-        sudo docker-compose up --build
+        sudo ${DOCKER_COMPOSE_CMD} down
+        sudo ${DOCKER_COMPOSE_CMD} up --build
 
         # sudo chmod 777 -R "$file"
       fi
     else
-      sudo docker-compose down
-      sudo docker-compose up --build
+      sudo ${DOCKER_COMPOSE_CMD} down
+      sudo ${DOCKER_COMPOSE_CMD} up --build
 
       # sudo chmod 777 -R "$file"
     fi
@@ -435,15 +443,15 @@ runDockerCompose() {
     trap 'cleanup' INT
 
     if [ "$must_sudo" == "false" ]; then
-      docker-compose down
-      if ! docker-compose up --build -d; then
+      ${DOCKER_COMPOSE_CMD} down
+      if ! ${DOCKER_COMPOSE_CMD} up --build -d; then
         echo "Error occurred. Trying with sudo..."
-        sudo docker-compose down
-        sudo docker-compose up --build -d
+        sudo ${DOCKER_COMPOSE_CMD} down
+        sudo ${DOCKER_COMPOSE_CMD} up --build -d
       fi
     else
-      sudo docker-compose down
-      sudo docker-compose up --build -d
+      sudo ${DOCKER_COMPOSE_CMD} down
+      sudo ${DOCKER_COMPOSE_CMD} up --build -d
     fi
 
     waitForConntaction $PUBLIC_PORT
@@ -486,7 +494,7 @@ runDockerCompose() {
 # Function to handle clean-up on script exit or Ctrl+C
 cleanup() {
   echo "Stopping the Docker container..."
-  docker-compose down
+  ${DOCKER_COMPOSE_CMD} down
   if [ -f "${lock_file_path}" ]; then
     rm "${lock_file_path}"
   fi
