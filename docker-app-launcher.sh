@@ -145,7 +145,7 @@ then
 fi
 
 # 或是沒有捷徑 docker-compose的話
-if ! command -v docker-compose &> /dev/null && ! type docker-compose &> /dev/null
+if ! command -v docker-compose >/dev/null 2>&1 && ! docker compose version >/dev/null 2>&1; then
 then
   echo "docker-compose could not be found"
 
