@@ -144,7 +144,8 @@ then
   exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null
+# 或是沒有捷徑 docker-compose的話
+if ! command -v docker-compose &> /dev/null && ! type docker-compose &> /dev/null
 then
   echo "docker-compose could not be found"
 
