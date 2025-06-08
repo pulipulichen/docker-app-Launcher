@@ -1,0 +1,49 @@
+name: Cleaner
+on: 
+  # push:
+  # schedule:
+  #   - cron:  "0 0 * * 1" # 實際執行時間是這個時間加八小時
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-and-deploy:
+    concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
+    runs-on: ubuntu-24.04
+    steps:
+      # ----------------------------------------------------------------
+      
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      # ----------------------------------------------------------------
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch gh-pages branch
+        run: |
+          # mkdir -p /tmp/gh-pages
+          # ls -la
+          # mv ./output/* /tmp/gh-pages/
+
+          git fetch origin gh-pages --depth=1
+          git checkout gh-pages
+
+      - name: Remove all history except latest commit
+        run: |
+          last_commit=$(git log -n 1 --pretty=format:%H | head -n 1)
+          git reset --soft $last_commit
+
+          # rm -rf *
+
+          # rsync -a --delete /tmp/gh-pages/ ./
+
+          git add .
+          git commit --amend -m "Keep only the latest commit: ${{ github.sha }}"
+
+          git gc --aggressive --prune=now
+          
+          git push --force origin gh-pages
