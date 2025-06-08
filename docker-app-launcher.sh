@@ -504,8 +504,8 @@ cleanup() {
 # =================
 # 設定為同一個使用者 20250608-2259 
 
-export UID=$(id -u)
-export GID=$(id -g)
+# export UID=$(id -u)
+# export GID=$(id -g)
 
 # -----------------
 # 執行指令
