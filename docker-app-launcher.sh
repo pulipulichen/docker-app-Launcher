@@ -427,13 +427,13 @@ runDockerCompose() {
       if ! ${DOCKER_COMPOSE_CMD} up --build; then
         echo "Error occurred. Trying with sudo..."
         sudo ${DOCKER_COMPOSE_CMD} down
-        sudo ${DOCKER_COMPOSE_CMD} up --build
+        sudo UID=$(id -u $SUDO_USER) GID=$(id -g $SUDO_USER) ${DOCKER_COMPOSE_CMD} up --build
 
         # sudo chmod 777 -R "$file"
       fi
     else
       sudo ${DOCKER_COMPOSE_CMD} down
-      sudo ${DOCKER_COMPOSE_CMD} up --build
+      sudo UID=$(id -u $SUDO_USER) GID=$(id -g $SUDO_USER) ${DOCKER_COMPOSE_CMD} up --build
 
       # sudo chmod 777 -R "$file"
     fi
@@ -447,11 +447,11 @@ runDockerCompose() {
       if ! ${DOCKER_COMPOSE_CMD} up --build -d; then
         echo "Error occurred. Trying with sudo..."
         sudo ${DOCKER_COMPOSE_CMD} down
-        sudo ${DOCKER_COMPOSE_CMD} up --build -d
+        sudo UID=$(id -u $SUDO_USER) GID=$(id -g $SUDO_USER) ${DOCKER_COMPOSE_CMD} up --build -d
       fi
     else
       sudo ${DOCKER_COMPOSE_CMD} down
-      sudo ${DOCKER_COMPOSE_CMD} up --build -d
+      sudo UID=$(id -u $SUDO_USER) GID=$(id -g $SUDO_USER) ${DOCKER_COMPOSE_CMD} up --build -d
     fi
 
     waitForConntaction $PUBLIC_PORT
@@ -500,12 +500,6 @@ cleanup() {
   fi
   exit 1
 }
-
-# =================
-# 設定為同一個使用者 20250608-2259 
-
-export DOCKER_UID=$(id -u)
-export DOCKER_GID=$(id -g)
 
 # -----------------
 # 執行指令
